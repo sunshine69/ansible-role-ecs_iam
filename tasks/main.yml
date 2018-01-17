@@ -28,15 +28,6 @@
   pause: seconds=10
   when: registered_iam_role.changed
 
-- name: Create IAM role for DB DNS Updater
-  iam:
-    region: "{{ region }}"
-    profile: "{{ profile|default(omit) }}"
-    iam_type: role
-    name: "db-dns-updater"
-    trust_policy_filepath: "{{ role_path }}/files/ecs-task-trust-policy.json"
-    state: present
-  register: registered_iam_role
 
 # See this http://stackoverflow.com/questions/36419442/the-role-defined-for-the-function-cannot-be-assumed-by-lambda
 # Without this I hit the error The role defined for the function cannot be assumed by Lambda
@@ -44,15 +35,23 @@
   pause: seconds=10
   when: registered_iam_role.changed
 
-- name: Assign DB DNS Updater policy
-  iam_policy:
+- name: Create ECS DNS Updater managed policy
+  iam_managed_policy:
     region: "{{ region }}"
     profile: "{{ profile|default(omit) }}"
-    iam_type: role
-    iam_name: "db-dns-updater"
-    policy_name: "DBDNSUpdater"
+    policy_name: "ECSDNSUpdater"
+    policy_description: "Update DNS based on information from Container Metadata"
     state: "present"
-    policy_json: "{{ lookup('file', 'db-dns-updater-policy.json', convert_data=False) | from_json }}"
+    policy: "{{ lookup('file', 'ecs-dns-updater-policy.json', convert_data=False) | from_json }}"
+
+- name: Create IAM role with ECS DNS Updater managed policy
+  iam_role:
+    region: "{{ region }}"
+    profile: "{{ profile|default(omit) }}"
+    state: "present"
+    name: "ecs-dns-updater"
+    managed_policy: ECSDNSUpdater
+    assume_role_policy_document: "{{ lookup('file', 'ecs-task-trust-policy.json', convert_data=False) | from_json }}"
 
 - name: Sleeping another 10 sec for the role policy to be updated.
   pause: seconds=10
