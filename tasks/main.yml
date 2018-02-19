@@ -24,11 +24,6 @@
     state: "present"
     policy_json: "{{ lookup('file', 'iam-policy-ecs-service.json', convert_data=False) | from_json }}"
 
-- name: Sleeping another 10 sec for the role policy to be updated.
-  pause: seconds=10
-  when: registered_iam_role.changed
-
-
 # See this http://stackoverflow.com/questions/36419442/the-role-defined-for-the-function-cannot-be-assumed-by-lambda
 # Without this I hit the error The role defined for the function cannot be assumed by Lambda
 - name: Sleeping for 10 sec for the role to be available.
